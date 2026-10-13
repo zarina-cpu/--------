@@ -1059,16 +1059,27 @@ app.put('/api/habits/:id/log', authenticateToken, async (req, res) => {
   try {
     const habitId = Number(req.params.id);
     const iso = new Date().toISOString();
-    const result = await pool.query(
-      `UPDATE habits
-       SET logs = array_append(logs, $1)
-       WHERE id = $2 AND user_id = $3
-       RETURNING id, title, type, logs, thoughts_milestones, created_at`,
-      [iso, habitId, req.user.id]
+    const hRes = await pool.query(
+      'SELECT id, title, type, logs, thoughts_milestones, created_at FROM habits WHERE id = $1 AND user_id = $2',
+      [habitId, req.user.id]
     );
-    if (result.rows.length === 0) {
+    if (hRes.rows.length === 0) {
       return res.status(404).json({ message: 'Habit not found' });
     }
+    const current = hRes.rows[0];
+    let logs = Array.isArray(current.logs) ? [...current.logs] : [];
+    if (typeof logs === 'string') {
+      try { logs = JSON.parse(logs); } catch { logs = []; }
+    }
+    logs.push(iso);
+
+    const result = await pool.query(
+      `UPDATE habits
+       SET logs = $1
+       WHERE id = $2 AND user_id = $3
+       RETURNING id, title, type, logs, thoughts_milestones, created_at`,
+      [logs, habitId, req.user.id]
+    );
     const habit = result.rows[0];
     const newAchievements = await ensureHabitMilestoneAchievements(
       pool,
@@ -1095,16 +1106,30 @@ app.put('/api/habits/:id/milestone', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'text is required' });
     }
 
+    const hRes = await pool.query(
+      'SELECT id, thoughts_milestones FROM habits WHERE id = $1 AND user_id = $2',
+      [habitId, req.user.id]
+    );
+    if (hRes.rows.length === 0) {
+      return res.status(404).json({ message: 'Habit not found' });
+    }
+    let tm = hRes.rows[0].thoughts_milestones;
+    if (!tm || typeof tm !== 'object') {
+      try {
+        tm = typeof tm === 'string' ? JSON.parse(tm) : {};
+      } catch {
+        tm = {};
+      }
+    }
+    tm = { '7': '', '14': '', '21': '', ...tm };
+    tm[dayKey] = text;
+
     const result = await pool.query(
       `UPDATE habits
-       SET thoughts_milestones = jsonb_set(
-         COALESCE(thoughts_milestones, '{"7": "", "14": "", "21": ""}'::jsonb),
-         $1::text[],
-         to_jsonb($2::text)
-       )
-       WHERE id = $3 AND user_id = $4
+       SET thoughts_milestones = $1
+       WHERE id = $2 AND user_id = $3
        RETURNING id, title, type, logs, thoughts_milestones, created_at`,
-      [[dayKey], text, habitId, req.user.id]
+      [tm, habitId, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Habit not found' });
@@ -1286,6 +1311,10 @@ app.use((err, _req, res, next) => {
   next(err);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

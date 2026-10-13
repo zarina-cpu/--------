@@ -1,0 +1,29 @@
+{
+  "name": "my-way-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack application «Мой Путь» (Vite React + Express API on Turso)",
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "dev": "npm run dev --prefix frontend",
+    "start": "npm run start --prefix backend",
+    "db:init-turso": "npm run db:init-turso --prefix backend",
+    "db:migrate-pg-to-turso": "npm run db:migrate-pg-to-turso --prefix backend"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "jsonwebtoken": "^9.0.2",
+    "passport": "^0.7.0",
+    "passport-apple": "^2.0.2",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-oauth2": "^1.8.0",
+    "passport-vkontakte": "^0.4.0",
+    "pg": "^8.13.0"
+  }
+}
