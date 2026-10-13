@@ -1,0 +1,83 @@
+# Контекст проекта
+Разрабатываем клиент-серверное адаптивное веб-приложение "Мой Путь" (психологический трекер осознанности).
+Стек Бэкенда: Node.js, Express, PostgreSQL, pg (или Sequelize), JWT (для авторизации).
+Стек Фронтенда: React (Hooks), Axios (для API-запросов), Tailwind CSS.
+
+# СТРУКТУРА СЕРВЕРА (Node.js / Express)
+Сгенерируй код бэкенда на Node.js. Архитектура базы данных PostgreSQL должна содержать следующие таблицы:
+
+1. users (Пользователи):
+   - id: SERIAL PRIMARY KEY
+   - email: VARCHAR(255) UNIQUE NOT NULL
+   - password_hash: VARCHAR(255) NOT NULL
+   - created_at: TIMESTAMP DEFAULT NOW()
+
+2. mood_logs (Записи настроения):
+   - id: SERIAL PRIMARY KEY
+   - user_id: INT REFERENCES users(id) ON DELETE CASCADE
+   - emoji: VARCHAR(50) NOT NULL
+   - text_reason: TEXT
+   - created_at: TIMESTAMP DEFAULT NOW()
+
+3. habits (Привычки):
+   - id: SERIAL PRIMARY KEY
+   - user_id: INT REFERENCES users(id) ON DELETE CASCADE
+   - title: VARCHAR(255) NOT NULL
+   - type: VARCHAR(50) NOT NULL (значения: 'will_do' | 'wont_do')
+   - logs: TEXT[] DEFAULT '{}' (массив ISO-строк дат выполнения)
+   - thoughts_milestones: JSONB DEFAULT '{"7": "", "14": "", "21": ""}'::jsonb
+   - created_at: TIMESTAMP DEFAULT NOW()
+
+4. basics (Личные базисы):
+   - id: SERIAL PRIMARY KEY
+   - user_id: INT REFERENCES users(id) ON DELETE CASCADE
+   - type: VARCHAR(50) NOT NULL (значения: 'want' | 'can')
+   - title: TEXT NOT NULL
+   - created_at: TIMESTAMP DEFAULT NOW()
+
+5. achievements (Раздел "Я сделала"):
+   - id: SERIAL PRIMARY KEY
+   - user_id: INT REFERENCES users(id) ON DELETE CASCADE
+   - title: TEXT NOT NULL
+   - type: VARCHAR(50) NOT NULL (значения: 'habit_archive' | 'manual_achievement')
+   - completed_at: TIMESTAMP DEFAULT NOW()
+
+6. diary_entries (Дневник мыслей):
+   - id: SERIAL PRIMARY KEY
+   - user_id: INT REFERENCES users(id) ON DELETE CASCADE
+   - text_reflection: TEXT NOT NULL
+   - created_at: TIMESTAMP DEFAULT NOW()
+
+## Эндпоинты Node.js API (Защищены Middleware проверки JWT: authenticateToken):
+- POST /api/auth/register — Регистрация пользователя (хеширование пароля через bcrypt).
+- POST /api/auth/login — Аутентификация, выдача JWT-токена в ответе.
+- GET /api/user/data — Сквозное получение абсолютно всех сущностей текущего user_id (moods, habits, basics, achievements, diary) за один запрос для оптимизации SPA.
+- POST /api/moods, POST /api/habits, POST /api/basics, POST /api/achievements, POST /api/diary — Создание соответствующих записей.
+- PUT /api/habits/:id/log — Добавление нового таймстампа в массив logs привычки.
+- PUT /api/habits/:id/milestone — Обновление объекта thoughts_milestones.
+- DELETE /api/habits/:id/archive — Перенос привычки в таблицу achievements с типом 'habit_archive' и удаление из habits.
+- DELETE /api/user/reset — Полная очистка всех данных пользователя (за исключением учетной записи).
+
+---
+
+# СТРУКТУРА КЛИЕНТА (React + Tailwind CSS)
+Реализуй SPA-интерфейс в файле App.jsx, отправляющий запросы к Node.js бэкенду с JWT-токеном в заголовке Authorization: Bearer <token>. Если токен отсутствует в localStorage, принудительно рендерить экран Входа.
+
+Реализуй 6 экранов переключаемых через useState:
+1. 'login': Полноценная форма Входа / Регистрации. При успешном ответе токен сохраняется в локальное хранилище.
+2. 'main' (Главный): Дашборд. Виджет добавления настроения, интерактивный список привычек с кнопками "Отметить лог" и "В архив", списки Базисов "Хочу" и "Могу" с формами быстрого добавления.
+3. 'hall' (Зал славы): Вывод достижений из таблицы achievements. Кнопка ручного добавления.
+4. 'analytics' (Аналитика): Интерактивный таймлайн-календарь за последние 15 дней.
+5. 'diary' (Дневник): Текстовый блокнот (textarea) для свободной рефлексии с сохранением в diary_entries.
+6. 'settings' (Настройки): Управление профилем и кнопка Выхода (удаление JWT-токена и сброс состояния).
+
+# Жесткая бизнес-логика (Сквозная фильтрация)
+При клике на любую плитку-число в календаре экрана "Аналитика", открывается модальное окно. 
+Логика фильтрации: фронтенд фильтрует полученные с Node.js массивы данных, оставляя строго те записи, у которых дата (created_at, completed_at или таймстампы внутри массива logs) совпадает с выбранным календарным днем. Вывести внутри модального окна:
+- Записи настроения (с точным выводом часов и минут)
+- Все отметки выполнения привычек за этот конкретный день
+- Записи из "Зала славы" за этот день
+- Тексты из "Дневника мыслей" за этот день
+
+# Адаптивность (Tailwind)
+Mobile-first подход. На смартфонах все плитки, списки и блоки дашборда выстраиваются в вертикальный стек (grid-cols-1). Скругления элементов (rounded-2xl), плавная анимация переходов.

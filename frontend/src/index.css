@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  ::selection {
+    background-color: #f5b99b;
+    color: #523d37;
+  }
+
+  html.dark ::selection {
+    background-color: rgb(245 185 155 / 0.4);
+    color: #fce4dc;
+  }
+}
+
+body {
+  min-height: 100vh;
+  color: #523d37;
+  background-color: #fff0eb;
+  background-image: linear-gradient(
+    165deg,
+    #fff6f2 0%,
+    #ffefe6 40%,
+    #ffe9df 100%
+  );
+}
+
+html.dark {
+  color: #f5e6df;
+}
+
+html.dark body {
+  color: #f0e0d8;
+  background-color: #0c0a09;
+  background-image:
+    radial-gradient(ellipse 110% 70% at 50% -15%, rgb(72 48 42 / 0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, rgb(48 32 28 / 0.18) 0%, transparent 45%),
+    linear-gradient(168deg, #070605 0%, #0c0a09 32%, #141110 68%, #0a0807 100%);
+}
+
+@layer components {
+  .app-card {
+    border-color: #ffd6e0;
+  }
+
+  .app-input {
+    border-color: #ffd6e0;
+  }
+
+  .nav-link-active {
+    background-color: #ffffff;
+    border: 1px solid #ffd6e0;
+    color: #523d37;
+    box-shadow: 0 1px 2px rgb(232 149 127 / 0.14);
+  }
+
+  html.dark .nav-link-active {
+    background-color: #1e1917;
+    border-color: rgb(245 196 208 / 0.22);
+    color: #f0e0d8;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+  }
+
+  html.dark .app-card:not(.habit-fill-will-do):not(.habit-fill-wont-do) {
+    background-color: #1a1614;
+    border-color: rgb(245 196 208 / 0.2);
+    color: #f0e0d8;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+  }
+
+  .app-card.habit-fill-will-do {
+    background-image: linear-gradient(
+      145deg,
+      #fff8f6 0%,
+      #fff5f7 45%,
+      #ffeff4 100%
+    );
+    background-color: #fff5f7;
+    border-color: #f5c4d0;
+    box-shadow: 0 1px 0 rgb(255 214 224 / 0.45);
+  }
+
+  .app-card.habit-fill-wont-do {
+    background-image: linear-gradient(
+      145deg,
+      #fff6f0 0%,
+      #ffefe6 48%,
+      #ffe8dc 100%
+    );
+    background-color: #fff6f0;
+    border-color: rgb(245 196 155 / 0.65);
+    box-shadow: 0 1px 0 rgb(250 212 200 / 0.4);
+  }
+
+  html.dark .app-card.habit-fill-will-do {
+    background-image: linear-gradient(
+      145deg,
+      rgb(245 196 208 / 0.1) 0%,
+      rgb(20 17 16 / 0.92) 100%
+    );
+    background-color: #1c1816;
+    border-color: rgb(245 196 208 / 0.22);
+    box-shadow: inset 0 1px 0 rgb(245 196 208 / 0.06);
+  }
+
+  html.dark .app-card.habit-fill-wont-do {
+    background-image: linear-gradient(
+      145deg,
+      rgb(196 104 82 / 0.12) 0%,
+      rgb(18 15 14 / 0.94) 100%
+    );
+    background-color: #1a1614;
+    border-color: rgb(232 149 127 / 0.22);
+    box-shadow: inset 0 1px 0 rgb(232 149 127 / 0.05);
+  }
+
+  html.dark .app-input {
+    background-color: #12100f;
+    border-color: rgb(245 196 208 / 0.18);
+    color: #f0e0d8;
+  }
+
+  html.dark .app-input::placeholder {
+    color: #d9b8ab;
+  }
+
+  .btn-peach {
+    background-color: #c46852;
+    color: #ffffff;
+    font-weight: 600;
+    border: 1px solid rgb(245 180 190 / 0.55);
+  }
+
+  .btn-peach:hover {
+    background-color: #d97d66;
+  }
+
+  html.dark .btn-peach {
+    background-color: #944a3a;
+    border-color: rgb(148 90 74 / 0.65);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  }
+
+  html.dark .btn-peach:hover {
+    background-color: #a85542;
+  }
+
+  /* Системные эмодзи → тёплый розово-персиковый оттенок */
+  .emoji-peach {
+    display: inline-block;
+    line-height: 1;
+    filter: sepia(0.42) saturate(1.7) hue-rotate(312deg) brightness(1.07)
+      contrast(0.96);
+  }
+
+  html.dark .emoji-peach {
+    filter: sepia(0.48) saturate(1.55) hue-rotate(312deg) brightness(1.14)
+      contrast(0.92);
+  }
+}
+
+@layer utilities {
+  .scrollbar-calm {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(232 149 127 / 0.55) transparent;
+  }
+
+  html.dark .scrollbar-calm {
+    scrollbar-color: rgb(245 185 155 / 0.42) transparent;
+  }
+}
