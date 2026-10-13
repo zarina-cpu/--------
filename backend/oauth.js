@@ -8,11 +8,23 @@ const https = require('https');
 const { syncProviderAvatar, oauthAvatarSource } = require('./avatar');
 
 function getBackendUrl() {
-  return process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+  if (process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return `http://localhost:${process.env.PORT || 5000}`;
 }
 
 function getFrontendUrl() {
-  return process.env.FRONTEND_URL || 'http://localhost:3000';
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
 }
 
 async function fetchUserRow(pool, userId) {

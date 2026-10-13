@@ -4,6 +4,12 @@ require('dotenv').config();
 
 const isTurso = Boolean(process.env.TURSO_DATABASE_URL);
 
+if (process.env.VERCEL && !isTurso) {
+  console.error(
+    'Vercel: задайте TURSO_DATABASE_URL и TURSO_AUTH_TOKEN в переменных окружения backend.'
+  );
+}
+
 let pool;
 
 if (isTurso) {

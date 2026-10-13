@@ -21,9 +21,19 @@ const {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+function resolveFrontendOrigin() {
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: resolveFrontendOrigin(),
     credentials: true,
   })
 );
@@ -314,7 +324,7 @@ app.get('/api/user/data', authenticateToken, async (req, res) => {
     const [achievements, diary, dayJournals] = await Promise.all([
       pool.query(
         `SELECT id, title, type, completed_at, habit_id, milestone_day, habit_snapshot,
-                COALESCE(hidden_from_hall, false) AS hidden_from_hall
+                COALESCE(hidden_from_hall, 0) AS hidden_from_hall
          FROM achievements WHERE user_id = $1 ORDER BY completed_at DESC`,
         [userId]
       ),
@@ -1300,9 +1310,29 @@ app.post('/api/achievements/:id/restore-habit', authenticateToken, async (req, r
   }
 });
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+async function checkDatabase() {
+  try {
+    await pool.query('SELECT 1');
+    return {
+      ok: true,
+      driver: pool.isTurso ? 'turso' : 'postgres',
+    };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+}
+
+async function healthHandler(_req, res) {
+  const db = await checkDatabase();
+  const body = {
+    status: db.ok ? 'ok' : 'degraded',
+    db,
+  };
+  res.status(db.ok ? 200 : 503).json(body);
+}
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 app.use((err, _req, res, next) => {
   if (err?.type === 'entity.too.large') {
