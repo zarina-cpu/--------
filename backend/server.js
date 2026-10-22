@@ -18,6 +18,7 @@ const {
   setManualAvatar,
   clearUserAvatar,
 } = require('./avatar');
+const { localDateKey, toIsoUtc, nowIsoUtc } = require('./datetime');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -71,7 +72,7 @@ function normalizeGratitude(raw) {
 
 function parseEntryDate(raw) {
   if (!raw) {
-    return new Date().toISOString().slice(0, 10);
+    return localDateKey();
   }
   const s = String(raw).slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
@@ -152,17 +153,63 @@ function resolveJournalEntryIndex(list, entryId, idPrefix) {
   return -1;
 }
 
+function serializeJournalTimestamps(entries) {
+  if (!Array.isArray(entries)) return entries;
+  return entries.map((item) =>
+    item && typeof item === 'object'
+      ? { ...item, created_at: item.created_at ? toIsoUtc(item.created_at) : item.created_at }
+      : item
+  );
+}
+
 function serializeDayJournalRow(row) {
   const entryDate = formatEntryDateFromDb(row.entry_date);
+  const gratitude = normalizeGratitudeStored(row.gratitude).map((g) => ({
+    ...g,
+    created_at: g.created_at ? toIsoUtc(g.created_at) : g.created_at,
+  }));
   return {
     id: row.id,
     entry_date: entryDate,
-    gratitude: normalizeGratitudeStored(row.gratitude),
-    stress_entries: parseTextEntries(row.stress_entries, row.stress_text),
-    lesson_entries: parseTextEntries(row.lesson_entries, row.lesson_text),
-    note_entries: parseTextEntries(row.note_entries, row.note_text),
-    updated_at: row.updated_at,
+    gratitude,
+    stress_entries: serializeJournalTimestamps(
+      parseTextEntries(row.stress_entries, row.stress_text)
+    ),
+    lesson_entries: serializeJournalTimestamps(
+      parseTextEntries(row.lesson_entries, row.lesson_text)
+    ),
+    note_entries: serializeJournalTimestamps(
+      parseTextEntries(row.note_entries, row.note_text)
+    ),
+    updated_at: row.updated_at ? toIsoUtc(row.updated_at) : row.updated_at,
   };
+}
+
+function serializeHabitRow(row) {
+  let logs = row.logs;
+  if (typeof logs === 'string') {
+    try {
+      logs = JSON.parse(logs);
+    } catch {
+      logs = [];
+    }
+  }
+  if (Array.isArray(logs)) {
+    logs = logs.map((log) => toIsoUtc(log));
+  }
+  return {
+    ...row,
+    created_at: toIsoUtc(row.created_at),
+    logs,
+  };
+}
+
+function serializeRowTimestamps(row, fields) {
+  const out = { ...row };
+  for (const field of fields) {
+    if (out[field] != null) out[field] = toIsoUtc(out[field]);
+  }
+  return out;
 }
 
 const DAY_JOURNAL_SECTIONS = new Set(['gratitude', 'stress', 'lesson', 'note']);
@@ -343,11 +390,11 @@ app.get('/api/user/data', authenticateToken, async (req, res) => {
 
     res.json({
       user: profileRow ? userProfilePayload(profileRow) : null,
-      moods: moods.rows,
-      habits: habitsResult.rows,
-      basics: basics.rows,
-      achievements: achievements.rows,
-      diary: diary.rows,
+      moods: moods.rows.map((r) => serializeRowTimestamps(r, ['created_at'])),
+      habits: habitsResult.rows.map(serializeHabitRow),
+      basics: basics.rows.map((r) => serializeRowTimestamps(r, ['created_at'])),
+      achievements: achievements.rows.map((r) => serializeRowTimestamps(r, ['completed_at'])),
+      diary: diary.rows.map((r) => serializeRowTimestamps(r, ['created_at'])),
       day_journals: dayJournals.rows.map(serializeDayJournalRow),
     });
   } catch (err) {
@@ -726,7 +773,7 @@ app.post('/api/day-journal/entry', authenticateToken, async (req, res) => {
     const prev = existingRow.rows[0];
     const stamp = {
       id: String(Date.now()),
-      created_at: new Date().toISOString(),
+      created_at: nowIsoUtc(),
     };
 
     let gratitude = Array.isArray(prev?.gratitude) ? [...prev.gratitude] : [];
@@ -1068,7 +1115,7 @@ app.put('/api/diary/:id', authenticateToken, async (req, res) => {
 app.put('/api/habits/:id/log', authenticateToken, async (req, res) => {
   try {
     const habitId = Number(req.params.id);
-    const iso = new Date().toISOString();
+    const iso = nowIsoUtc();
     const hRes = await pool.query(
       'SELECT id, title, type, logs, thoughts_milestones, created_at FROM habits WHERE id = $1 AND user_id = $2',
       [habitId, req.user.id]

@@ -11,6 +11,14 @@ import {
   readImageFileAsDataUrl,
   uploadUserAvatar,
 } from './userAvatar.js';
+import {
+  formatLocalDate,
+  formatLocalTime as formatTime,
+  normalizeDateKey,
+  parseServerDate,
+  sameLocalCalendarDay as sameCalendarDay,
+  todayDateKey,
+} from './datetime.js';
 
 const MOOD_EMOJIS = ['😊', '😌', '😐', '😔', '😢', '😤', '🤔', '😠', '🥳', '😴'];
 
@@ -47,30 +55,6 @@ function ProfileIconSvg({ className = 'w-5 h-5 text-warm-800 dark:text-warm-100'
       <path d="M5 20c0-3.5 3.5-6 7-6s7 2.5 7 6" />
     </svg>
   );
-}
-
-function todayDateKey() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function normalizeDateKey(value) {
-  if (!value) return '';
-  const raw = String(value);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw.slice(0, 10))) {
-    return raw.slice(0, 10);
-  }
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) {
-    return raw.slice(0, 10);
-  }
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 function findDayJournalByDate(entries, dateKey) {
@@ -342,15 +326,6 @@ const MONTH_NAMES = [
   'дек',
 ];
 
-function sameCalendarDay(a, b) {
-  return new Date(a).toDateString() === new Date(b).toDateString();
-}
-
-function formatTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-}
-
 function saveErrorFromAxios(err) {
   const status = err.response?.status;
   const serverMsg = err.response?.data?.message;
@@ -375,7 +350,7 @@ function last15Days() {
 }
 
 function startOfLocalDay(dateInput) {
-  const d = new Date(dateInput);
+  const d = parseServerDate(dateInput);
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -2251,7 +2226,7 @@ export default function App() {
                         <p className="font-medium">{a.title}</p>
                         <p className={`text-xs ${mutedText}`}>{achievementTypeLabel(a)}</p>
                         <time className={`text-xs ${subtleText}`}>
-                          {new Date(a.completed_at).toLocaleDateString('ru-RU')}
+                          {formatLocalDate(a.completed_at)}
                         </time>
                       </div>
                       <div className={listRowIconActions}>
