@@ -35,7 +35,10 @@ npm start
 1. Установите EAS CLI: `npm i -g eas-cli`
 2. `eas login`
 3. `eas build:configure`
-4. `eas build -p android --profile preview` (APK) или `production` (AAB для Google Play)
+4. Первый раз: `npx eas-cli login` и `npx eas-cli init` (привязка проекта к Expo).
+5. Сборка APK: `npm run build:android:preview` или `npx eas-cli build -p android --profile preview --non-interactive` (после логина).
+
+Профиль `preview` в `eas.json` задаёт `android.buildType: "apk"` — устанавливаемый файл, не AAB.
 
 Пакет Android: `com.myway.tracker` (см. `app.json`).
 

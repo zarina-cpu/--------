@@ -11,10 +11,12 @@
     },
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.myway.tracker",
       "supportsTablet": true
     },
     "android": {
       "package": "com.myway.tracker",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#fff0eb",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
